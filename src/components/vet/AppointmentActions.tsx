@@ -48,9 +48,11 @@ export default function AppointmentActions({ appointmentId }: Props) {
   return (
     <div className="flex gap-1.5 shrink-0" onClick={(e) => e.preventDefault()}>
       <button
+        data-testid="btn-confirm-apt"
         onClick={() => act("confirm")}
         disabled={loading !== null}
         title="Onayla"
+        aria-label="Randevuyu onayla"
         className="w-7 h-7 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50"
       >
         {loading === "confirm" ? (
@@ -60,9 +62,11 @@ export default function AppointmentActions({ appointmentId }: Props) {
         )}
       </button>
       <button
+        data-testid="btn-cancel-apt"
         onClick={() => act("cancel")}
         disabled={loading !== null}
         title="Reddet"
+        aria-label="Randevuyu reddet"
         className="w-7 h-7 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50"
       >
         {loading === "cancel" ? (
