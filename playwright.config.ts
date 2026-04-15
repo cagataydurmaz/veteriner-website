@@ -88,11 +88,15 @@ export default defineConfig({
       ],
     },
 
-    // ── 6. Mobile viewport — public search pages on iPhone 13 ───────────────
+    // ── 6. Mobile viewport — public search pages (Chromium, iPhone 13 dims) ──
     {
       name: 'mobile-tests',
       use: {
-        ...devices['iPhone 13'],
+        ...devices['Desktop Chrome'],
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
       },
       dependencies: ['setup'],
       testMatch: /search-filters.*\.spec\.ts$/,
