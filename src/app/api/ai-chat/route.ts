@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       (signal) =>
         anthropic.messages.create(
           {
-            model: "claude-sonnet-4-6",
+            model: "claude-sonnet-4-5",
             max_tokens: 512,
             system: SYSTEM_PROMPT,
             messages: messages.map((m: { role: string; content: string }) => ({
