@@ -51,8 +51,9 @@ test.describe("Owner — Hayvan Yönetimi", () => {
     // Submit without filling anything
     await page.locator('[data-testid="pet-submit"]').click();
 
-    // Validation errors should appear
-    const errMsg = page.locator("text=/gerekli|zorunlu|seçin/i").first();
+    // Validation errors should appear — Zod messages in red <p> tags
+    // "İsim gereklidir" or "Tür seçiniz"
+    const errMsg = page.locator("p.text-red-500, p[class*='red']").first();
     await expect(errMsg).toBeVisible({ timeout: 3_000 });
   });
 
