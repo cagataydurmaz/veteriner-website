@@ -253,6 +253,7 @@ export default function VetCityFilterClient({
             />
           </div>
           <button
+            data-testid="expand-filters-btn"
             onClick={() => setShowFilters(v => !v)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-colors ${
               showFilters || activeFilterCount > 0

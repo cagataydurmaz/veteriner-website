@@ -102,7 +102,7 @@ test.describe("/online-veteriner", () => {
   });
 
   test("Filtrele butonu expanded filtreleri açar", async ({ page }) => {
-    const filterBtn = page.locator("button").filter({ hasText: /^Filtrele/ });
+    const filterBtn = page.locator('[data-testid="expand-filters-btn"]');
     await filterBtn.click();
     // Fee range select should appear
     await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible({ timeout: 3_000 });
@@ -110,7 +110,7 @@ test.describe("/online-veteriner", () => {
 
   test("fiyat filtresi sonuç sayısını günceller", async ({ page }) => {
     // Open expanded filters
-    await page.locator("button").filter({ hasText: /^Filtrele/ }).click();
+    await page.locator('[data-testid="expand-filters-btn"]').click();
     await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible({ timeout: 3_000 });
 
     const before = await getResultCount(page).catch(() => -1);
@@ -135,7 +135,7 @@ test.describe("/online-veteriner", () => {
   });
 
   test("fiyat filtresi ₺300 üzeri olan veti ₺300-altı filtresinden çıkarır", async ({ page }) => {
-    await page.locator("button").filter({ hasText: /^Filtrele/ }).click();
+    await page.locator('[data-testid="expand-filters-btn"]').click();
     await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible({ timeout: 3_000 });
 
     // Apply 0-300 filter
@@ -191,12 +191,12 @@ test.describe("/veterinerler", () => {
   });
 
   test("fiyat filtresi expanded filters'da görünür", async ({ page }) => {
-    await page.locator("button").filter({ hasText: /^Filtrele/ }).click();
+    await page.locator('[data-testid="expand-filters-btn"]').click();
     await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible({ timeout: 3_000 });
   });
 
   test("fiyat filtresi sonuç sayısını günceller", async ({ page }) => {
-    await page.locator("button").filter({ hasText: /^Filtrele/ }).click();
+    await page.locator('[data-testid="expand-filters-btn"]').click();
     await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible({ timeout: 3_000 });
 
     const before = await getResultCount(page).catch(() => -1);
