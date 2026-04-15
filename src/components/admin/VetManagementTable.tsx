@@ -316,7 +316,7 @@ export default function VetManagementTable({ initialVets, pendingCount = 0 }: Ve
             </div>
           )}
           {filteredVets.map((vet) => (
-            <div key={vet.id} className="bg-white rounded-xl border border-amber-200 p-4 space-y-3">
+            <div key={vet.id} data-testid={`vet-card-${vet.id}`} className="bg-white rounded-xl border border-amber-200 p-4 space-y-3">
               {/* Header */}
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -403,6 +403,7 @@ export default function VetManagementTable({ initialVets, pendingCount = 0 }: Ve
               {/* Actions */}
               <div className="flex gap-2 pt-1">
                 <Button
+                  data-testid={`btn-reject-vet-${vet.id}`}
                   variant="destructive"
                   size="sm"
                   className="flex-1 text-xs"
@@ -411,6 +412,7 @@ export default function VetManagementTable({ initialVets, pendingCount = 0 }: Ve
                   <XCircle className="w-3.5 h-3.5 mr-1" /> Reddet
                 </Button>
                 <Button
+                  data-testid={`btn-approve-vet-${vet.id}`}
                   size="sm"
                   className="flex-1 text-xs bg-green-600 hover:bg-green-700"
                   onClick={() => handleApprove(vet.id)}

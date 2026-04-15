@@ -87,6 +87,16 @@ export default defineConfig({
         /mvp-deployment-check.*\.spec\.ts$/,
       ],
     },
+
+    // ── 6. Mobile viewport — public search pages on iPhone 13 ───────────────
+    {
+      name: 'mobile-tests',
+      use: {
+        ...devices['iPhone 13'],
+      },
+      dependencies: ['setup'],
+      testMatch: /search-filters.*\.spec\.ts$/,
+    },
   ],
 
   webServer: {

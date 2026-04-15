@@ -193,12 +193,13 @@ export default function AddPetPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>İsim *</Label>
-                <Input placeholder="Buddy" {...register("name")} />
+                <Input data-testid="pet-name" placeholder="Buddy" {...register("name")} />
                 {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label>Tür *</Label>
                 <select
+                  data-testid="pet-species"
                   className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166534]"
                   {...register("species")}
                 >
@@ -259,7 +260,7 @@ export default function AddPetPage() {
               İptal
             </Button>
           </Link>
-          <Button type="submit" className="flex-1" loading={loading}>
+          <Button data-testid="pet-submit" type="submit" className="flex-1" loading={loading}>
             Hayvanı Ekle
           </Button>
         </div>

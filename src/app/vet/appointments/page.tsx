@@ -343,6 +343,7 @@ export default function VetAppointmentsPage() {
                 Vazgeç
               </button>
               <button
+                data-testid="btn-cancel-confirm"
                 disabled={!!actionLoading}
                 className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
                 onClick={() => cancelModal.aptId && cancelWithChain(cancelModal.aptId, cancelReason)}
@@ -488,12 +489,16 @@ function AppointmentRow({
   const isPast      = new Date(apt.datetime) < new Date();
 
   return (
-    <div className={`bg-white border rounded-xl p-4 transition-shadow hover:shadow-sm ${
-      isCancelled || isNoShow ? "opacity-60 border-gray-200" :
-      isPending               ? "border-amber-200" :
-      isConfirmed             ? "border-green-200" :
-                                "border-gray-200"
-    }`}>
+    <div
+      data-testid={`apt-card-${apt.id}`}
+      data-status={apt.status}
+      className={`bg-white border rounded-xl p-4 transition-shadow hover:shadow-sm ${
+        isCancelled || isNoShow ? "opacity-60 border-gray-200" :
+        isPending               ? "border-amber-200" :
+        isConfirmed             ? "border-green-200" :
+                                  "border-gray-200"
+      }`}
+    >
       <div className="flex items-start gap-3">
 
         {/* Date + time block */}
@@ -557,6 +562,7 @@ function AppointmentRow({
             <div className="flex items-center gap-1.5">
               {isPending && (
                 <button
+                  data-testid="btn-confirm-apt"
                   disabled={!!actionLoading}
                   onClick={() => onConfirm(apt.id)}
                   className="flex items-center gap-1 px-3 py-1.5 bg-[#166534] text-white rounded-lg text-xs font-medium hover:bg-[#14532D] transition-colors disabled:opacity-50 min-h-[32px]"
@@ -620,6 +626,7 @@ function AppointmentRow({
                 Detay
               </Link>
               <button
+                data-testid="btn-cancel-apt"
                 disabled={!!actionLoading}
                 onClick={() => onCancel(apt.id)}
                 className="flex items-center justify-center w-8 h-8 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
