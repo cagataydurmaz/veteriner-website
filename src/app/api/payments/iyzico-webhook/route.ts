@@ -36,10 +36,13 @@ export async function POST(req: NextRequest) {
     const rawBody = await req.text();
 
     // İmza doğrulama (güvenlik: sahte webhook'ları reddet)
+    // IYZICO_SECRET_KEY varsa imza ZORUNLU — yoksa (lokal/test) atla
     const signature = req.headers.get("x-iyzi-signature") ?? "";
-    if (signature && !verifyWebhookSignature(rawBody, signature)) {
-      console.warn("[iyzico-webhook] imza geçersiz — istek reddedildi");
-      return NextResponse.json({ error: "Geçersiz imza" }, { status: 401 });
+    if (IYZICO_SECRET_KEY) {
+      if (!signature || !verifyWebhookSignature(rawBody, signature)) {
+        console.warn("[iyzico-webhook] imza eksik veya geçersiz — istek reddedildi");
+        return NextResponse.json({ error: "Geçersiz imza" }, { status: 401 });
+      }
     }
 
     let payload: Record<string, unknown>;

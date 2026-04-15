@@ -15,6 +15,7 @@ import ReportVetButton from "@/components/owner/ReportVetButton";
 import ComplaintModal from "@/components/owner/ComplaintModal";
 import ClinicMap from "@/components/ClinicMap";
 import OwnerAppointmentDetailSync from "@/components/owner/OwnerAppointmentDetailSync";
+import JoinVideoButton from "@/components/shared/JoinVideoButton";
 
 export default async function AppointmentDetailPage({
   params,
@@ -97,12 +98,12 @@ export default async function AppointmentDetailPage({
               ? "Görüşmeye katılmak için hazır olun"
               : `${dt.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })} saatinde başlayacak`}
           </p>
-          <Link href={`/video/${apt.id}?appointment=${apt.id}`}>
-            <Button className="bg-white text-blue-600 hover:bg-blue-50 font-bold px-8">
-              <Video className="w-4 h-4 mr-2" />
-              {inWindow ? "Görüşmeye Katıl" : "Odaya Gir"}
-            </Button>
-          </Link>
+          <JoinVideoButton
+            appointmentId={apt.id}
+            label={inWindow ? "Görüşmeye Katıl" : "Odaya Gir"}
+            variant="white"
+            className="px-8"
+          />
         </div>
       )}
 

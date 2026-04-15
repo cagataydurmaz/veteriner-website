@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Video, Clock, PawPrint, Calendar, CheckCircle, XCircle } from "lucide-react";
+import JoinVideoButton from "@/components/shared/JoinVideoButton";
 
 export const metadata: Metadata = { title: "Video Görüşmeler" };
 
@@ -139,12 +140,12 @@ export default async function VetVideoPage() {
                         {statusInfo.label}
                       </Badge>
                       {joinable ? (
-                        <Link href={`/video/${apt.id}`}>
-                          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3">
-                            <Video className="w-3.5 h-3.5 mr-1.5" />
-                            Katıl
-                          </Button>
-                        </Link>
+                        <JoinVideoButton
+                          appointmentId={apt.id}
+                          label="Katıl"
+                          size="sm"
+                          className="text-xs px-3"
+                        />
                       ) : apt.status === "confirmed" ? (
                         <span className="text-xs text-gray-400 whitespace-nowrap">
                           10 dk önce aktif
