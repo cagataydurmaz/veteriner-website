@@ -20,12 +20,15 @@ export async function POST(req: Request) {
 
     const { data: vet } = await supabase
       .from("veterinarians")
-      .select("id, offers_nobetci, is_busy, buffer_lock, is_verified")
+      .select("id, account_status, offers_nobetci, is_busy, buffer_lock, is_verified")
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (!vet) return NextResponse.json({ error: "Veteriner profili bulunamadı" }, { status: 403 });
     if (!vet.is_verified) return NextResponse.json({ error: "Hesabınız henüz onaylanmadı" }, { status: 403 });
+    if (vet.account_status && vet.account_status !== "active") {
+      return NextResponse.json({ error: "Hesabınız aktif değil" }, { status: 403 });
+    }
 
     // ── Layer 1: Permission check ──────────────────────────────────────────────
     if (oncall && !vet.offers_nobetci) {

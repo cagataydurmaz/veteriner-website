@@ -33,6 +33,8 @@ interface RealtimeStore {
   listeners: Set<() => void>;
   refCount: number;
   channels: RealtimeChannel[];
+  /** Pending teardown timer — cancelled if a new subscriber mounts before it fires */
+  teardownTimer: ReturnType<typeof setTimeout> | null;
 }
 
 const stores = new Map<string, RealtimeStore>();
@@ -45,6 +47,7 @@ function getOrCreateStore(vetId: string, initial: VetRealtimeState): RealtimeSto
       listeners: new Set(),
       refCount: 0,
       channels: [],
+      teardownTimer: null,
     };
     stores.set(vetId, store);
   }
@@ -156,22 +159,32 @@ export function useVetRealtime(
     storeRef.current = getOrCreateStore(vetId, initial);
   }
 
-  // Setup/teardown channels with ref counting
+  // Setup/teardown channels with ref counting + grace period
   useEffect(() => {
     const store = getOrCreateStore(vetId, initial);
     storeRef.current = store;
 
+    // Cancel any pending teardown — this new subscriber keeps the store alive
+    if (store.teardownTimer) {
+      clearTimeout(store.teardownTimer);
+      store.teardownTimer = null;
+    }
+
     store.refCount += 1;
-    if (store.refCount === 1) {
-      // First subscriber — create channels
+    if (store.refCount === 1 && store.channels.length === 0) {
+      // First subscriber (or re-subscriber after graceful teardown) — create channels
       setupChannels(vetId, store);
     }
 
     return () => {
       store.refCount -= 1;
       if (store.refCount === 0) {
-        // Last subscriber left — tear down channels
-        teardownChannels(vetId, store);
+        // Last subscriber left — delay teardown by 3 s to survive quick
+        // unmount/remount cycles (React StrictMode, page transitions).
+        store.teardownTimer = setTimeout(() => {
+          store.teardownTimer = null;
+          teardownChannels(vetId, store);
+        }, 3_000);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

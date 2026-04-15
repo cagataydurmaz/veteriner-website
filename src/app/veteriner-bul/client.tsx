@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
+import type { VetStatusChangeDetail } from "@/components/owner/VetListRealtimeSync";
 import Link from "next/link";
 import { MapPin, Star, ShieldCheck, X, Video, ChevronRight, ChevronDown, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -183,6 +184,34 @@ export default function VetListClient({
     }
   }, []);
 
+  // ── Realtime status overrides ──────────────────────────────────────────────
+  // Populated by `vet:status-change` window events dispatched by VetListRealtimeSync.
+  // Avoids a server round-trip (router.refresh()) for every broadcast event.
+  const [statusOverrides, setStatusOverrides] = useState<Map<string, Partial<Vet>>>(new Map());
+
+  useEffect(() => {
+    const handler = (e: CustomEvent<VetStatusChangeDetail>) => {
+      const { vetId, ...changes } = e.detail;
+      if (!vetId) return;
+      setStatusOverrides(prev => {
+        const next = new Map(prev);
+        next.set(vetId, { ...(next.get(vetId) ?? {}), ...changes } as Partial<Vet>);
+        return next;
+      });
+    };
+    window.addEventListener("vet:status-change", handler as EventListener);
+    return () => window.removeEventListener("vet:status-change", handler as EventListener);
+  }, []);
+
+  // Merge server-rendered vet data with live broadcast overrides
+  const mergedVets = useMemo(() => {
+    if (statusOverrides.size === 0) return vets;
+    return vets.map(v => {
+      const override = statusOverrides.get(v.id);
+      return override ? { ...v, ...override } : v;
+    });
+  }, [vets, statusOverrides]);
+
   const districts = city ? (CITY_DISTRICTS[city] ?? []) : [];
 
   const handleCityChange = (val: string) => {
@@ -238,7 +267,7 @@ export default function VetListClient({
   const activeFeeRange = FEE_RANGES.find(r => r.value === feeRange) ?? FEE_RANGES[0];
 
   const filtered = useMemo(() => {
-    const base = vets.filter(v => {
+    const base = mergedVets.filter(v => {
       if (city      && v.city      !== city)     return false;
       if (district  && v.district  !== district) return false;
       if (specialty && v.specialty !== specialty) return false;
@@ -279,7 +308,7 @@ export default function VetListClient({
     }
 
     return base;
-  }, [vets, city, district, specialty, availableToday, feeRange, activeFeeRange, initialQuery, geo]);
+  }, [mergedVets, city, district, specialty, availableToday, feeRange, activeFeeRange, initialQuery, geo]);
 
   // Reset pagination on filter change
   useEffect(() => { setVisibleCount(PAGE_SIZE_VET); }, [city, district, specialty, availableToday, feeRange]);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import type { VetStatusChangeDetail } from "@/components/owner/VetListRealtimeSync";
 import Link from "next/link";
 import {
   Search, MapPin, Star, ShieldCheck, X, Video,
@@ -158,6 +159,34 @@ export default function VetCityFilterClient({
   const [geo,           setGeo]           = useState<GeoState>({ status: "idle" });
   const [feeRange,      setFeeRange]      = useState<FeeRange>("all");
 
+  // ── Realtime status overrides ──────────────────────────────────────────────
+  // Populated by `vet:status-change` window events dispatched by VetListRealtimeSync.
+  // Avoids a server round-trip (router.refresh()) for every broadcast event.
+  const [statusOverrides, setStatusOverrides] = useState<Map<string, Partial<Vet>>>(new Map());
+
+  useEffect(() => {
+    const handler = (e: CustomEvent<VetStatusChangeDetail>) => {
+      const { vetId, ...changes } = e.detail;
+      if (!vetId) return;
+      setStatusOverrides(prev => {
+        const next = new Map(prev);
+        next.set(vetId, { ...(next.get(vetId) ?? {}), ...changes } as Partial<Vet>);
+        return next;
+      });
+    };
+    window.addEventListener("vet:status-change", handler as EventListener);
+    return () => window.removeEventListener("vet:status-change", handler as EventListener);
+  }, []);
+
+  // Merge server-rendered vet data with live broadcast overrides
+  const mergedVets = useMemo(() => {
+    if (statusOverrides.size === 0) return vets;
+    return vets.map(v => {
+      const override = statusOverrides.get(v.id);
+      return override ? { ...v, ...override } : v;
+    });
+  }, [vets, statusOverrides]);
+
   // Reset pagination when filters change
   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [city, district, specialty, query, services, availToday, sort, feeRange, geo]);
   // Reset district when city changes
@@ -187,17 +216,17 @@ export default function VetCityFilterClient({
   const vetDistances = useMemo<Map<string, number>>(() => {
     if (geo.status !== "done") return new Map();
     const map = new Map<string, number>();
-    vets.forEach(v => {
+    mergedVets.forEach(v => {
       const coords = CITY_COORDS[v.city];
       if (coords) map.set(v.id, haversineKm(geo.lat, geo.lng, coords[0], coords[1]));
     });
     return map;
-  }, [vets, geo]);
+  }, [mergedVets, geo]);
 
-  // Filter + sort
+  // Filter + sort (uses mergedVets to reflect live broadcast status overrides)
   const feeRangeConfig = FEE_RANGES.find(r => r.value === feeRange)!;
   const filtered = useMemo(() => {
-    let list = vets.filter(v => {
+    let list = mergedVets.filter(v => {
       if (city && v.city !== city) return false;
       if (district && v.district !== district) return false;
       if (specialty && !getSpecialties(v.specialty).includes(specialty)) return false;
@@ -222,7 +251,7 @@ export default function VetCityFilterClient({
     if (sort === "fee_asc")   list = [...list].sort((a, b) => (a.video_consultation_fee || a.consultation_fee || 999) - (b.video_consultation_fee || b.consultation_fee || 999));
     if (sort === "proximity") list = [...list].sort((a, b) => (vetDistances.get(a.id) ?? Infinity) - (vetDistances.get(b.id) ?? Infinity));
     return list;
-  }, [vets, city, district, specialty, query, services, availToday, sort, feeRange, feeRangeConfig, vetDistances]);
+  }, [mergedVets, city, district, specialty, query, services, availToday, sort, feeRange, feeRangeConfig, vetDistances]);
 
   const toggleService = (s: ServiceFilter) =>
     setServices(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);

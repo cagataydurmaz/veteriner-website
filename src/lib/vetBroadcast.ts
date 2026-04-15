@@ -6,13 +6,14 @@
  * and updates the vet's status indicator in <300ms — far faster than the ~1-2 s
  * latency of postgres_changes.
  *
- * Fire-and-forget: errors are swallowed and only logged so a failed broadcast
- * never blocks the API response.
+ * Fire-and-forget: errors are tracked via Sentry + DB so a failed broadcast
+ * never blocks the API response but is always observable.
  *
  * Channel format: `vet-status:{vetId}`
  * Event:          `status_change`
  * Payload:        { vetId, ...changedFields }
  */
+import { trackApiError } from "@/lib/error-tracking";
 
 export interface VetStatusPayload {
   vetId: string;
@@ -72,7 +73,9 @@ export async function broadcastVetStatus(
       }),
     });
   } catch (err) {
-    // Never block the API response — broadcast is best-effort
-    console.warn("[vetBroadcast] failed for vet", vetId, err instanceof Error ? err.message : err);
+    // Never block the API response — broadcast is best-effort.
+    // But always track the failure so Supabase Realtime outages are visible in Sentry.
+    console.error("[vetBroadcast] Supabase Realtime broadcast failed for vet", vetId, err instanceof Error ? err.message : err);
+    void trackApiError(err, { context: "vetBroadcast", extra: { vetId } });
   }
 }

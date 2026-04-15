@@ -161,6 +161,24 @@ export function useVetToggle(config: UseVetToggleConfig): UseVetToggleReturn {
     };
   }, [type, value]);
 
+  // ── Page Visibility: send heartbeat immediately on tab focus ───────────
+  // Browsers throttle setInterval in background tabs (Chrome: min 1 min,
+  // Safari: can suspend entirely). When the vet returns to the tab and
+  // the vet is online, fire a heartbeat immediately to reset the server
+  // clock, rather than waiting for the next setInterval tick.
+  useEffect(() => {
+    if (type !== 'online') return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && value) {
+        sendHeartbeat();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [type, value]);
+
   // ── Lock computation ──────────────────────────────────────────────────
   const messages = LOCK_MESSAGES[type];
   let isLocked = false;
