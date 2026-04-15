@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { sendSupportResolvedEmail } from "@/lib/email";
+import { notifyThreadResolved } from "@/lib/telegram";
 
 /**
  * POST /api/support/threads/[id]/resolve
@@ -67,6 +68,12 @@ export async function POST(
         threadUrl: `${APP_URL}/owner/dashboard?support=open`,
       }).catch((err) => console.error("[support/threads/resolve] email failed:", err));
     }
+
+    // Telegram: çözüldü özet bildirimi
+    notifyThreadResolved({
+      vetName: userData?.full_name ?? "Veteriner",
+      subject: (thread.subject as string | null) ?? "Destek Talebi",
+    }).catch((err) => console.error("[support/resolve] telegram failed:", err));
 
     return NextResponse.json({ success: true });
   } catch (err) {

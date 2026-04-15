@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { sendVetEscalationEmail } from "@/lib/email";
+import { notifyVetEscalation } from "@/lib/telegram";
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "veterineribul@gmail.com";
 const APP_URL     = process.env.NEXT_PUBLIC_APP_URL ?? "https://veterineribul.com";
@@ -54,18 +55,24 @@ export async function POST(
       metadata:    { system: true, type: "escalated" },
     });
 
-    // Urgent email to admin
+    // Urgent notifications to admin (email + Telegram) — fire-and-forget
     const threadUser = Array.isArray(thread.user) ? thread.user[0] : thread.user;
     const vetData = threadUser as { full_name?: string; email?: string } | null;
-
-    sendVetEscalationEmail({
-      to:        ADMIN_EMAIL,
+    const notifyOpts = {
       vetName:   vetData?.full_name ?? "Veteriner",
       vetEmail:  vetData?.email ?? "",
       threadId,
       subject:   (thread.subject as string | null) ?? "Teknik Destek",
       threadUrl: `${APP_URL}/admin/support/${threadId}`,
-    }).catch((err) => console.error("[support/threads/escalate] email failed:", err));
+    };
+
+    // E-posta bildirimi
+    sendVetEscalationEmail({ to: ADMIN_EMAIL, ...notifyOpts })
+      .catch((err) => console.error("[support/escalate] email failed:", err));
+
+    // Telegram anlık bildirim (token ayarlanmışsa)
+    notifyVetEscalation(notifyOpts)
+      .catch((err) => console.error("[support/escalate] telegram failed:", err));
 
     return NextResponse.json({ ok: true });
   } catch (err) {
