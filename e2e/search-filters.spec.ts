@@ -140,7 +140,9 @@ test.describe("/online-veteriner", () => {
 
     // Apply 0-300 filter
     await page.locator('[data-testid="fee-range-select"]').selectOption("0-300");
-    await page.waitForTimeout(400);
+    // Wait for React re-render: result count element must stabilize
+    await page.locator('[data-testid="result-count"]').waitFor({ state: "visible" });
+    await page.waitForTimeout(600);
 
     // Verify no vet fee BADGE (not select options) shows a fee > 300
     const feeBadges = page.locator('[data-testid="vet-fee-badge"]');
@@ -215,7 +217,7 @@ test.describe("/veterinerler", () => {
     // Either shows results with "ahmet" or shows 0 with empty state
     await expect(page.locator("body")).not.toContainText("Uncaught");
     if (count === 0) {
-      await expect(page.getByText(/bulunamadı|Tüm filtreleri/i)).toBeVisible();
+      await expect(page.getByText(/bulunamadı|Tüm filtreleri/i).first()).toBeVisible();
     }
   });
 
