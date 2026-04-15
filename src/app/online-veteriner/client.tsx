@@ -503,7 +503,7 @@ function OnlineVetCard({ vet, isBusy, distanceKm }: { vet: Vet; isBusy: boolean;
             </span>
           )}
           {vet.video_consultation_fee && (
-            <span className="ml-auto text-sm font-bold text-blue-600">₺{vet.video_consultation_fee}</span>
+            <span data-testid="vet-fee-badge" className="ml-auto text-sm font-bold text-blue-600">₺{vet.video_consultation_fee}</span>
           )}
         </div>
 

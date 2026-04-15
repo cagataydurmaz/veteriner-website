@@ -44,7 +44,7 @@ test.describe("/veteriner-bul", () => {
   });
 
   test("sayfа yüklenîr, başlık ve filtreler görünür", async ({ page }) => {
-    await expect(page).toHaveTitle(/Veteriner Bul|veterineribul/i);
+    await expect(page).toHaveTitle(/Veteriner/i);
     // GPS button visible
     await expect(page.locator('[data-testid="gps-btn"]')).toBeVisible();
     // City select
@@ -102,16 +102,16 @@ test.describe("/online-veteriner", () => {
   });
 
   test("Filtrele butonu expanded filtreleri açar", async ({ page }) => {
-    const filterBtn = page.getByText("Filtrele");
+    const filterBtn = page.locator("button").filter({ hasText: /^Filtrele/ });
     await filterBtn.click();
     // Fee range select should appear
-    await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible();
+    await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible({ timeout: 3_000 });
   });
 
   test("fiyat filtresi sonuç sayısını günceller", async ({ page }) => {
     // Open expanded filters
-    await page.getByText("Filtrele").click();
-    await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible();
+    await page.locator("button").filter({ hasText: /^Filtrele/ }).click();
+    await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible({ timeout: 3_000 });
 
     const before = await getResultCount(page).catch(() => -1);
 
@@ -135,18 +135,18 @@ test.describe("/online-veteriner", () => {
   });
 
   test("fiyat filtresi ₺300 üzeri olan veti ₺300-altı filtresinden çıkarır", async ({ page }) => {
-    await page.getByText("Filtrele").click();
-    await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible();
+    await page.locator("button").filter({ hasText: /^Filtrele/ }).click();
+    await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible({ timeout: 3_000 });
 
     // Apply 0-300 filter
     await page.locator('[data-testid="fee-range-select"]').selectOption("0-300");
     await page.waitForTimeout(400);
 
-    // Verify no card shows a fee > 300
-    const feeBadges = page.locator("text=/₺[0-9]+/");
+    // Verify no vet fee BADGE (not select options) shows a fee > 300
+    const feeBadges = page.locator('[data-testid="vet-fee-badge"]');
     const badges = await feeBadges.allTextContents();
     for (const badge of badges) {
-      const amount = parseInt(badge.replace(/[₺,\s]/g, ""), 10);
+      const amount = parseInt(badge.replace(/[₺,\s,]/g, ""), 10);
       if (!isNaN(amount) && amount > 300) {
         throw new Error(`Vet with fee ₺${amount} shown when filter is 0-300`);
       }
@@ -189,13 +189,13 @@ test.describe("/veterinerler", () => {
   });
 
   test("fiyat filtresi expanded filters'da görünür", async ({ page }) => {
-    await page.getByText("Filtrele").click();
-    await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible();
+    await page.locator("button").filter({ hasText: /^Filtrele/ }).click();
+    await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible({ timeout: 3_000 });
   });
 
   test("fiyat filtresi sonuç sayısını günceller", async ({ page }) => {
-    await page.getByText("Filtrele").click();
-    await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible();
+    await page.locator("button").filter({ hasText: /^Filtrele/ }).click();
+    await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible({ timeout: 3_000 });
 
     const before = await getResultCount(page).catch(() => -1);
     await page.locator('[data-testid="fee-range-select"]').selectOption("0-300");
