@@ -137,12 +137,19 @@ export async function POST(req: NextRequest) {
     // the veterinarians WITH CHECK issue that affects related tables.
     const service = createServiceClient();
 
+    // Platform komisyonu: %15 platform, %85 veteriner
+    const COMMISSION_RATE = 0.15;
+    const commission = Math.round(amount * COMMISSION_RATE * 100) / 100;
+    const vetPayout  = Math.round((amount - commission) * 100) / 100;
+
     // Log payment attempt (regardless of success/failure for audit trail)
     await service.from("payments").insert({
       vet_id: vetData?.id,
       owner_id: user.id,
       appointment_id: appointmentId,
       amount,
+      platform_commission: iyziData.status === "success" ? commission : null,
+      vet_payout:          iyziData.status === "success" ? vetPayout  : null,
       type: "video_consultation",
       status: iyziData.status === "success" ? "success" : "failed",
       iyzico_payment_id: iyziData.paymentId || null,

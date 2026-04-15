@@ -22,8 +22,9 @@ export async function updateSession(request: NextRequest) {
     const CSRF_EXEMPT = [
       '/api/auth/callback',       // Supabase OAuth callback (GET but listed for safety)
       '/api/auth/confirm',        // Email confirmation redirect
-      '/api/iyzico/webhook',      // Iyzico payment webhook (external POST)
-      '/api/iyzico/callback',     // Iyzico 3DS callback (external POST)
+      '/api/iyzico/webhook',           // Iyzico payment webhook (external POST)
+      '/api/iyzico/callback',          // Iyzico 3DS callback (external POST)
+      '/api/payments/iyzico-webhook',  // Yeni iyzico webhook endpoint
     ];
     const isExempt = CSRF_EXEMPT.some(p => pathname.startsWith(p));
     if (!isExempt) {

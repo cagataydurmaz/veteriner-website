@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   Search, MapPin, Star, ShieldCheck, X, Video,
-  ChevronRight, Clock, SlidersHorizontal, CheckCircle2, Zap,
+  ChevronRight, Clock, SlidersHorizontal, CheckCircle2, Zap, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VETERINARY_SPECIALTIES } from "@/lib/constants";
@@ -74,7 +74,64 @@ function getNextAvailableDay(vet: Vet): string | null {
   return null;
 }
 
-type SortOption = "rating" | "available" | "fee_asc";
+// ── GPS + Haversine (proximity sort) ─────────────────────────────────────────
+type GeoState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "denied" }
+  | { status: "unsupported" }
+  | { status: "done"; lat: number; lng: number };
+
+const CITY_COORDS: Record<string, [number, number]> = {
+  "Adana":[37.0,35.3213],"Adıyaman":[37.7648,38.2786],"Afyonkarahisar":[38.7507,30.5567],
+  "Ağrı":[39.7191,43.0503],"Amasya":[40.6499,35.8353],"Ankara":[39.9334,32.8597],
+  "Antalya":[36.8969,30.7133],"Artvin":[41.1828,41.8183],"Aydın":[37.856,27.8416],
+  "Balıkesir":[39.6484,27.8826],"Bilecik":[40.1506,29.9792],"Bingöl":[38.8854,40.4982],
+  "Bitlis":[38.3938,42.1232],"Bolu":[40.7359,31.6061],"Burdur":[37.7266,30.2914],
+  "Bursa":[40.1885,29.061],"Çanakkale":[40.1553,26.4142],"Çankırı":[40.6013,33.6134],
+  "Çorum":[40.5506,34.9556],"Denizli":[37.7765,29.0864],"Diyarbakır":[37.9144,40.2306],
+  "Düzce":[40.844,31.1565],"Edirne":[41.6818,26.5623],"Elazığ":[38.681,39.2264],
+  "Erzincan":[39.75,39.5],"Erzurum":[39.9208,41.2671],"Eskişehir":[39.7767,30.5206],
+  "Gaziantep":[37.0662,37.3833],"Giresun":[40.9128,38.3895],"Gümüşhane":[40.4386,39.4814],
+  "Hakkari":[37.5744,43.7408],"Hatay":[36.4018,36.3498],"Iğdır":[39.9237,44.0453],
+  "Isparta":[37.7648,30.5566],"İstanbul":[41.0082,28.9784],"İzmir":[38.4192,27.1287],
+  "Kahramanmaraş":[37.5858,36.9371],"Karabük":[41.2061,32.6204],"Karaman":[37.1759,33.2287],
+  "Kars":[40.6013,43.0975],"Kastamonu":[41.3887,33.7827],"Kayseri":[38.7312,35.4787],
+  "Kilis":[36.7184,37.1212],"Kırıkkale":[39.8468,33.5153],"Kırklareli":[41.735,27.2253],
+  "Kırşehir":[39.1425,34.1709],"Kocaeli":[40.8533,29.8815],"Konya":[37.8746,32.4932],
+  "Kütahya":[39.4167,29.9833],"Malatya":[38.3552,38.3095],"Manisa":[38.6191,27.4289],
+  "Mardin":[37.3212,40.7245],"Mersin":[36.8121,34.6415],"Muğla":[37.2153,28.3636],
+  "Muş":[38.7458,41.5064],"Nevşehir":[38.6939,34.6857],"Niğde":[39.9667,34.6833],
+  "Ordu":[40.9862,37.8797],"Osmaniye":[37.0742,36.2468],"Rize":[41.0201,40.5234],
+  "Sakarya":[40.694,30.4358],"Samsun":[41.2867,36.33],"Siirt":[37.9333,41.95],
+  "Sinop":[42.0231,35.1531],"Sivas":[39.7477,37.0179],"Şanlıurfa":[37.1591,38.7969],
+  "Şırnak":[37.4187,42.4918],"Tekirdağ":[40.9781,27.5117],"Tokat":[40.3167,36.55],
+  "Trabzon":[41.0015,39.7178],"Tunceli":[39.1079,39.5401],"Uşak":[38.6823,29.4082],
+  "Van":[38.4891,43.4089],"Yalova":[40.65,29.2667],"Yozgat":[39.82,34.8147],
+  "Zonguldak":[41.4564,31.7987],"Aksaray":[38.3687,34.037],"Bartın":[41.6344,32.3375],
+  "Batman":[37.8812,41.1351],"Bayburt":[40.2552,40.2249],
+};
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ── Fiyat aralığı ─────────────────────────────────────────────────────────────
+type FeeRange = "all" | "0-300" | "300-600" | "600-1000" | "1000+";
+const FEE_RANGES: { value: FeeRange; label: string; min: number; max: number }[] = [
+  { value: "all",      label: "Tüm Fiyatlar",  min: 0,    max: Infinity },
+  { value: "0-300",    label: "₺300 ve altı",   min: 0,    max: 300 },
+  { value: "300-600",  label: "₺300 – ₺600",    min: 300,  max: 600 },
+  { value: "600-1000", label: "₺600 – ₺1000",   min: 600,  max: 1000 },
+  { value: "1000+",    label: "₺1000 ve üzeri", min: 1000, max: Infinity },
+];
+
+type SortOption = "rating" | "available" | "fee_asc" | "proximity";
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function OnlineVetClient({
@@ -88,14 +145,45 @@ export default function OnlineVetClient({
   const [sort,         setSort]         = useState<SortOption>("rating");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showFilters,  setShowFilters]  = useState(false);
+  const [geo,          setGeo]          = useState<GeoState>({ status: "idle" });
+  const [feeRange,     setFeeRange]     = useState<FeeRange>("all");
 
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [city, specialty, query, availToday, sort]);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [city, specialty, query, availToday, sort, feeRange, geo]);
+
+  const handleDetectLocation = useCallback(() => {
+    if (!navigator.geolocation) { setGeo({ status: "unsupported" }); return; }
+    setGeo({ status: "loading" });
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setGeo({ status: "done", lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setSort("proximity");
+      },
+      () => setGeo({ status: "denied" }),
+      { timeout: 8000 }
+    );
+  }, []);
+
+  // Pre-compute distances for proximity sort (only when geo is done)
+  const vetDistances = useMemo<Map<string, number>>(() => {
+    if (geo.status !== "done") return new Map();
+    const map = new Map<string, number>();
+    vets.forEach(v => {
+      const coords = CITY_COORDS[v.city];
+      if (coords) map.set(v.id, haversineKm(geo.lat, geo.lng, coords[0], coords[1]));
+    });
+    return map;
+  }, [vets, geo]);
 
   const filtered = useMemo(() => {
+    const range = FEE_RANGES.find(r => r.value === feeRange)!;
     let list = vets.filter(v => {
       if (city && v.city !== city) return false;
       if (specialty && !getSpecialties(v.specialty).includes(specialty)) return false;
       if (availToday && !v.is_available_today) return false;
+      if (feeRange !== "all") {
+        const fee = v.video_consultation_fee ?? 0;
+        if (fee < range.min || fee > range.max) return false;
+      }
       if (query) {
         const q = query.toLowerCase();
         const name = (Array.isArray(v.user) ? v.user[0] : v.user)?.full_name?.toLowerCase() || "";
@@ -107,12 +195,16 @@ export default function OnlineVetClient({
     if (sort === "rating")    list = [...list].sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0));
     if (sort === "available") list = [...list].sort((a, b) => (b.is_available_today ? 1 : 0) - (a.is_available_today ? 1 : 0));
     if (sort === "fee_asc")   list = [...list].sort((a, b) => (a.video_consultation_fee || 999) - (b.video_consultation_fee || 999));
+    if (sort === "proximity") list = [...list].sort((a, b) => (vetDistances.get(a.id) ?? Infinity) - (vetDistances.get(b.id) ?? Infinity));
     return list;
-  }, [vets, city, specialty, query, availToday, sort]);
+  }, [vets, city, specialty, query, availToday, sort, feeRange, vetDistances]);
 
-  const clearAll = () => { setCity(""); setSpecialty(""); setQuery(""); setAvailToday(false); setSort("rating"); };
-  const hasFilters = city || specialty || query || availToday;
-  const activeCount = [city, specialty, query, availToday].filter(Boolean).length;
+  const clearAll = () => {
+    setCity(""); setSpecialty(""); setQuery(""); setAvailToday(false);
+    setSort("rating"); setFeeRange("all"); setGeo({ status: "idle" });
+  };
+  const hasFilters = city || specialty || query || availToday || feeRange !== "all" || geo.status === "done";
+  const activeCount = [city, specialty, query, availToday, feeRange !== "all", geo.status === "done"].filter(Boolean).length;
 
   return (
     <div className="space-y-5">
@@ -173,6 +265,41 @@ export default function OnlineVetClient({
             <span className="text-[10px]">{availToday ? "🟢" : "⚫"}</span>
             Bugün Müsait
           </button>
+
+          {/* GPS proximity button */}
+          {geo.status === "idle" || geo.status === "unsupported" ? (
+            <button
+              onClick={handleDetectLocation}
+              disabled={geo.status === "unsupported"}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-colors bg-white text-gray-600 border-gray-200 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <MapPin className="w-4 h-4" />
+              {geo.status === "unsupported" ? "Konum Desteklenmiyor" : "Yakınımdakiler"}
+            </button>
+          ) : geo.status === "loading" ? (
+            <button disabled className="flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium border-gray-200 text-gray-400">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Konum alınıyor…
+            </button>
+          ) : geo.status === "denied" ? (
+            <button
+              onClick={handleDetectLocation}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium border-orange-200 bg-orange-50 text-orange-600 hover:border-orange-300"
+            >
+              <MapPin className="w-4 h-4" />
+              Konum izni gerekli
+            </button>
+          ) : (
+            /* done */
+            <button
+              onClick={() => { setGeo({ status: "idle" }); if (sort === "proximity") setSort("rating"); }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium bg-[#166534] text-white border-[#166534]"
+            >
+              <MapPin className="w-4 h-4" />
+              Yakına Göre
+              <X className="w-3.5 h-3.5 ml-0.5" />
+            </button>
+          )}
         </div>
 
         {/* Expanded filters */}
@@ -189,6 +316,15 @@ export default function OnlineVetClient({
               ))}
             </select>
             <select
+              value={feeRange}
+              onChange={e => setFeeRange(e.target.value as FeeRange)}
+              className="flex-1 min-w-[180px] px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#166534]/30"
+            >
+              {FEE_RANGES.map(r => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+            <select
               value={sort}
               onChange={e => setSort(e.target.value as SortOption)}
               className="flex-1 min-w-[180px] px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#166534]/30"
@@ -196,6 +332,9 @@ export default function OnlineVetClient({
               <option value="rating">Sırala: En Yüksek Puan</option>
               <option value="available">Sırala: Bugün Müsait Önce</option>
               <option value="fee_asc">Sırala: En Düşük Ücret</option>
+              {geo.status === "done" && (
+                <option value="proximity">Sırala: Yakınımdakiler</option>
+              )}
             </select>
           </div>
         )}
@@ -241,7 +380,12 @@ export default function OnlineVetClient({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.slice(0, visibleCount).map(vet => (
-            <OnlineVetCard key={vet.id} vet={vet} isBusy={busySet.has(vet.id)} />
+            <OnlineVetCard
+              key={vet.id}
+              vet={vet}
+              isBusy={busySet.has(vet.id)}
+              distanceKm={vetDistances.get(vet.id)}
+            />
           ))}
         </div>
       )}
@@ -261,7 +405,7 @@ export default function OnlineVetClient({
 }
 
 // ── OnlineVetCard ─────────────────────────────────────────────────────────────
-function OnlineVetCard({ vet, isBusy }: { vet: Vet; isBusy: boolean }) {
+function OnlineVetCard({ vet, isBusy, distanceKm }: { vet: Vet; isBusy: boolean; distanceKm?: number }) {
   const user      = Array.isArray(vet.user) ? vet.user[0] : vet.user;
   const initials  = user?.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2) || "V";
   const specs     = getSpecialties(vet.specialty);
@@ -320,7 +464,13 @@ function OnlineVetCard({ vet, isBusy }: { vet: Vet; isBusy: boolean }) {
             <div className="flex items-center gap-1 mt-1">
               <MapPin className="w-3 h-3 text-gray-400" />
               <span className="text-xs text-gray-400">{vet.city}</span>
-              <span className="text-xs text-blue-500 font-medium ml-1">· Türkiye geneli</span>
+              {distanceKm !== undefined ? (
+                <span className="text-xs text-blue-600 font-semibold ml-1">
+                  · {distanceKm < 1 ? "<1 km" : `~${Math.round(distanceKm)} km`}
+                </span>
+              ) : (
+                <span className="text-xs text-blue-500 font-medium ml-1">· Türkiye geneli</span>
+              )}
             </div>
           </div>
         </div>

@@ -154,6 +154,16 @@ function matchDistrict(city: string, raw: string): string {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Fiyat aralığı ön ayarları
+type FeeRange = "all" | "0-300" | "300-600" | "600-1000" | "1000+";
+const FEE_RANGES: { value: FeeRange; label: string; min: number; max: number }[] = [
+  { value: "all",      label: "Tüm Fiyatlar", min: 0,    max: Infinity },
+  { value: "0-300",    label: "₺300 ve altı",  min: 0,    max: 300 },
+  { value: "300-600",  label: "₺300 – ₺600",   min: 300,  max: 600 },
+  { value: "600-1000", label: "₺600 – ₺1000",  min: 600,  max: 1000 },
+  { value: "1000+",    label: "₺1000 ve üzeri",min: 1000, max: Infinity },
+];
+
 export default function VetListClient({
   vets, initialCity, initialSpecialty, initialQuery
 }: Props) {
@@ -162,6 +172,7 @@ export default function VetListClient({
   const [district, setDistrict]   = useState("");
   const [specialty, setSpecialty] = useState(initialSpecialty);
   const [availableToday, setAvailableToday] = useState(false);
+  const [feeRange, setFeeRange]   = useState<FeeRange>("all");
   const [geo, setGeo]             = useState<GeoState>({ status: "idle" });
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE_VET);
 
@@ -224,12 +235,19 @@ export default function VetListClient({
   }, []);
 
   // ── Filter + proximity sort ──────────────────────────────────────────────────
+  const activeFeeRange = FEE_RANGES.find(r => r.value === feeRange) ?? FEE_RANGES[0];
+
   const filtered = useMemo(() => {
     const base = vets.filter(v => {
       if (city      && v.city      !== city)     return false;
       if (district  && v.district  !== district) return false;
       if (specialty && v.specialty !== specialty) return false;
       if (availableToday && !v.is_available_today) return false;
+      // Fiyat aralığı filtresi — consultation_fee üzerinden
+      if (feeRange !== "all") {
+        const fee = v.consultation_fee ?? 0;
+        if (fee < activeFeeRange.min || fee > activeFeeRange.max) return false;
+      }
       if (initialQuery) {
         const q = initialQuery.toLowerCase();
         return (
@@ -261,14 +279,14 @@ export default function VetListClient({
     }
 
     return base;
-  }, [vets, city, district, specialty, availableToday, initialQuery, geo]);
+  }, [vets, city, district, specialty, availableToday, feeRange, activeFeeRange, initialQuery, geo]);
 
   // Reset pagination on filter change
-  useEffect(() => { setVisibleCount(PAGE_SIZE_VET); }, [city, district, specialty, availableToday]);
+  useEffect(() => { setVisibleCount(PAGE_SIZE_VET); }, [city, district, specialty, availableToday, feeRange]);
 
-  const hasFilters = city || district || specialty || availableToday;
+  const hasFilters = city || district || specialty || availableToday || feeRange !== "all";
   const clearFilters = () => {
-    setCity(""); setDistrict(""); setSpecialty(""); setAvailableToday(false);
+    setCity(""); setDistrict(""); setSpecialty(""); setAvailableToday(false); setFeeRange("all");
     if (geo.status === "done") setGeo({ status: "idle" });
   };
 
@@ -389,6 +407,23 @@ export default function VetListClient({
             </button>
           </div>
 
+          {/* Fiyat Aralığı */}
+          <div className="flex flex-col gap-1.5 min-w-[160px]">
+            <label className="block text-xs font-semibold text-gray-500">Muayene Ücreti</label>
+            <div className="relative">
+              <select
+                value={feeRange}
+                onChange={e => setFeeRange(e.target.value as FeeRange)}
+                className={SELECT_CLASS}
+              >
+                {FEE_RANGES.map(r => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            </div>
+          </div>
+
           {/* Clear */}
           {hasFilters && (
             <div className="flex flex-col gap-1.5">
@@ -471,6 +506,13 @@ export default function VetListClient({
           {filtered.slice(0, visibleCount).map(vet => {
             const user = Array.isArray(vet.user) ? vet.user[0] : vet.user;
             const initials = user?.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2) || "V";
+            // Mesafe hesapla (konum alındıysa)
+            const distKm = (() => {
+              if (geo.status !== "done") return null;
+              const coords = CITY_COORDS[vet.city];
+              if (!coords) return null;
+              return haversineKm(geo.lat, geo.lng, coords[0], coords[1]);
+            })();
             return (
               <Link key={vet.id} href={`/veteriner/${vet.id}`}>
                 <div className="bg-white rounded-2xl border border-gray-200 hover:border-[#1A6B4A] hover:shadow-md transition-all p-5 group h-full flex flex-col">
@@ -486,11 +528,19 @@ export default function VetListClient({
                         </div>
                         <ShieldCheck className="w-4 h-4 text-[#1A6B4A] shrink-0 mt-0.5" />
                       </div>
-                      <div className="flex items-center gap-1 mt-1">
-                        <MapPin className="w-3 h-3 text-gray-400" />
-                        <span className="text-xs text-gray-500">
-                          {vet.city}{vet.district ? ` / ${vet.district}` : ""}
-                        </span>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-500">
+                            {vet.city}{vet.district ? ` / ${vet.district}` : ""}
+                          </span>
+                        </div>
+                        {/* Mesafe badge — GPS alındıysa göster */}
+                        {distKm !== null && (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
+                            ~{distKm < 10 ? distKm.toFixed(1) : Math.round(distKm)} km
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -522,9 +572,16 @@ export default function VetListClient({
                         <Badge variant="secondary" className="text-xs bg-red-50 text-red-700 border-red-200">🚨 Nöbetçi</Badge>
                       )}
                     </div>
-                    <span className="text-xs text-[#1A6B4A] font-semibold flex items-center gap-1 group-hover:gap-2 transition-all whitespace-nowrap">
-                      Randevu Al <ChevronRight className="w-3 h-3" />
-                    </span>
+                    <div className="flex flex-col items-end gap-0.5">
+                      {vet.consultation_fee && (
+                        <span className="text-xs font-bold text-[#1A6B4A]">
+                          ₺{vet.consultation_fee}
+                        </span>
+                      )}
+                      <span className="text-xs text-[#1A6B4A] font-semibold flex items-center gap-1 group-hover:gap-2 transition-all whitespace-nowrap">
+                        Randevu Al <ChevronRight className="w-3 h-3" />
+                      </span>
+                    </div>
                   </div>
                 </div>
               </Link>

@@ -29,24 +29,42 @@ export async function POST(req: NextRequest) {
     if (!appointmentId || !refundType)
       return NextResponse.json({ error: "Eksik bilgi" }, { status: 400 });
 
-    // Load appointment
-    const { data: apt } = await supabase
+    // ── Yetki kontrolü için önce randevuyu oku (service client = RLS yok) ──
+    const { data: aptCheck } = await service
       .from("appointments")
-      .select("id, datetime, payment_status, payment_id, payment_amount, owner_id, vet:veterinarians(user_id)")
+      .select("id, owner_id, payment_status, vet:veterinarians(user_id)")
       .eq("id", appointmentId)
       .maybeSingle();
 
-    if (!apt) return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
-    if (apt.payment_status !== "held")
-      return NextResponse.json({ error: "İade edilecek ödeme bulunamadı" }, { status: 400 });
+    if (!aptCheck)
+      return NextResponse.json({ error: "Randevu bulunamadı" }, { status: 404 });
 
-    // Authorization: owner can cancel, vet can cancel
+    // Authorization check (owner veya vet olmalı)
     type VetType = { user_id: string };
-    const vetData = (Array.isArray(apt.vet) ? apt.vet[0] : apt.vet) as VetType | null;
-    const isOwner = apt.owner_id === user.id;
-    const isVet = vetData?.user_id === user.id;
+    const vetCheckData = (Array.isArray(aptCheck.vet) ? aptCheck.vet[0] : aptCheck.vet) as VetType | null;
+    const isOwner = aptCheck.owner_id === user.id;
+    const isVet = vetCheckData?.user_id === user.id;
     if (!isOwner && !isVet)
       return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
+
+    // ── Atomik kilit: iki eş zamanlı istek aynı iade işlemini başlatmasın ──
+    // UPDATE ... WHERE payment_status = 'held' yalnızca tek bir istek için
+    // başarılı olur; diğerleri 0 satır günceller ve 409 alır.
+    const { data: apt, error: claimErr } = await service
+      .from("appointments")
+      .update({ payment_status: "processing_refund" })
+      .eq("id", appointmentId)
+      .eq("payment_status", "held")   // yalnızca hâlâ "held" ise kazan
+      .select("id, datetime, payment_id, payment_amount, owner_id")
+      .maybeSingle();
+
+    if (claimErr || !apt) {
+      // Ya zaten iade edilmiş ya da başka bir istek kilit aldı
+      return NextResponse.json(
+        { error: "İade işlemi zaten başlatılmış veya iade edilecek ödeme bulunamadı." },
+        { status: 409 }
+      );
+    }
 
     const totalAmount = apt.payment_amount as number;
     const aptTime = new Date(apt.datetime);
