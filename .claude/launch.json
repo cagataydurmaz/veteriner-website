@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Next.js Dev Server",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["-c", "export PATH=/opt/homebrew/bin:$PATH && /opt/homebrew/bin/node node_modules/next/dist/bin/next dev --webpack"],
+      "port": 3000,
+      "autoPort": true
+    }
+  ]
+}

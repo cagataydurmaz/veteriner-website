@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /owner/
+Disallow: /vet/
+Disallow: /api/
+Disallow: /auth/callback
+
+Sitemap: https://veterinerbul.net/sitemap.xml

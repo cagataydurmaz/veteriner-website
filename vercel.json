@@ -1,0 +1,53 @@
+{
+  "regions": ["fra1"],
+  "crons": [
+    {
+      "path": "/api/cron/whatsapp-queue",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/no-show-detection",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/reminders/cron",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/check-flags",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/video-reminder",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/reset-availability",
+      "schedule": "1 0 * * *"
+    },
+    {
+      "path": "/api/cron/auto-unsuspend",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/auto-release-payments",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/nobetci-timeout",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/support-notify",
+      "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/cron/offline-inactive-vets",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/recompute-buffer-locks",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

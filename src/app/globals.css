@@ -1,26 +1,129 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 155 60% 26%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 155 30% 95%;
+    --secondary-foreground: 155 60% 20%;
+    --muted: 155 15% 96%;
+    --muted-foreground: 155 10% 46%;
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 155 15% 88%;
+    --input: 155 15% 88%;
+    --ring: 155 60% 26%;
+    --radius: 0.5rem;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  html {
+    /* Reserve scrollbar space so fixed elements don't get pushed inward on desktop */
+    scrollbar-gutter: stable;
+    /* Prevent horizontal scroll on mobile — clip is stronger than hidden and
+       does not create a new scroll container, so fixed/sticky elements still work */
+    overflow-x: clip;
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    /* Use the CSS variable injected by next/font/google in layout.tsx.
+       Fallback to system fonts for zero-FOUT during initial load. */
+    font-family: var(--font-inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+    overflow-x: hidden;
+  }
+  button,
+  a,
+  select,
+  [role="button"],
+  label[for],
+  summary {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Loading animations */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #f0f4f8 25%, #e2e8f0 50%, #f0f4f8 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Mobile keyboard awareness ────────────────────────────────────────────── */
+/* Inputs scroll into view when the soft keyboard opens */
+input:focus,
+textarea:focus,
+select:focus {
+  scroll-margin-bottom: 80px;
+}
+
+/* Sticky bottom action bars stay above the keyboard on iOS/Android */
+.sticky-bottom-action {
+  position: sticky;
+  bottom: 0;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  background: white;
+  z-index: 10;
+}
+
+/* Extra padding for views that sit behind the mobile bottom nav */
+.pb-safe {
+  padding-bottom: max(5rem, calc(env(safe-area-inset-bottom, 0px) + 4rem));
+}
+
+/* ── Form validation helpers ──────────────────────────────────────────────── */
+/* Error messages fade in only after blur (paired with onBlur mode in RHF)    */
+.field-error {
+  animation: error-fade-in 0.15s ease-out both;
+}
+
+@keyframes error-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
