@@ -39,7 +39,7 @@ test.describe("Nöbetçi Booking API — auth & input validation", () => {
 
   // A. Kimlik doğrulama
   test("A — /nobetci-booking yetkisiz istek 401 döner", async ({ playwright }) => {
-    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000" });
+    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000", storageState: { cookies: [], origins: [] } });
     const res = await ctx.post("/api/payments/nobetci-booking", {
       data: {
         vetId: FAKE_VET_ID,
@@ -159,7 +159,7 @@ test.describe("Nöbetçi Booking API — auth & input validation", () => {
 test.describe("Nöbetçi Respond API — güvenlik", () => {
 
   test("I — yetkisiz respond isteği 401 döner", async ({ playwright }) => {
-    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000" });
+    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000", storageState: { cookies: [], origins: [] } });
     const res = await ctx.post("/api/nobetci/respond", {
       data: { requestId: FAKE_REQUEST_ID, action: "accept" },
     });
@@ -422,7 +422,7 @@ test.describe("Nöbetçi Toggle — vet güvenliği", () => {
   });
 
   test("K3 — unauthenticated toggle-oncall 401 döner", async ({ playwright }) => {
-    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000" });
+    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000", storageState: { cookies: [], origins: [] } });
     const res = await ctx.post("/api/vet/toggle-oncall", { data: { oncall: true } });
     await ctx.dispose();
     expect(res.status()).toBe(401);

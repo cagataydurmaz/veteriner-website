@@ -21,12 +21,14 @@ const OWNER_AUTH_FILE = path.join(__dirname, "../playwright/.auth/owner.json");
 const VET_AUTH_FILE   = path.join(__dirname, "../playwright/.auth/vet.json");
 
 const FAKE_APT_ID = "00000000-0000-0000-0000-000000000099";
+// Playwright 1.33+'da playwright.request.newContext() projenin storageState'ini miras alır.
+const EMPTY_STATE = { cookies: [], origins: [] } as const;
 
 // ── A. Yetkisiz (unauthenticated) ─────────────────────────────────────────────
 test.describe("Messages API — auth & input validation", () => {
 
   test("A — yetkisiz istek 401 döner", async ({ playwright }) => {
-    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000" });
+    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000", storageState: EMPTY_STATE });
     const res = await ctx.post("/api/messages/send", {
       data: { appointmentId: FAKE_APT_ID, content: "merhaba" },
     });

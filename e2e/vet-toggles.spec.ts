@@ -25,32 +25,36 @@ import path from "path";
 const OWNER_AUTH_FILE = path.join(__dirname, "../playwright/.auth/owner.json");
 const VET_AUTH_FILE   = path.join(__dirname, "../playwright/.auth/vet.json");
 
+// Playwright 1.33+'da playwright.request.newContext() projenin storageState'ini miras alır.
+// Gerçekten anonim (cookie'siz) istek göndermek için açıkça boş state geçilmeli.
+const EMPTY_STATE = { cookies: [], origins: [] } as const;
+
 // ── Unauthenticated ──────────────────────────────────────────────────────────
 test.describe("Toggle API — unauthenticated", () => {
 
   test("A — toggle-online yetkisiz 401 döner", async ({ playwright }) => {
-    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000" });
+    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000", storageState: EMPTY_STATE });
     const res = await ctx.post("/api/vet/toggle-online", { data: { online: true } });
     await ctx.dispose();
     expect(res.status()).toBe(401);
   });
 
   test("B — toggle-available yetkisiz 401 döner", async ({ playwright }) => {
-    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000" });
+    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000", storageState: EMPTY_STATE });
     const res = await ctx.post("/api/vet/toggle-available", { data: { available: true } });
     await ctx.dispose();
     expect(res.status()).toBe(401);
   });
 
   test("C — toggle-oncall yetkisiz 401 döner", async ({ playwright }) => {
-    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000" });
+    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000", storageState: EMPTY_STATE });
     const res = await ctx.post("/api/vet/toggle-oncall", { data: { oncall: true } });
     await ctx.dispose();
     expect(res.status()).toBe(401);
   });
 
   test("D — heartbeat yetkisiz 401 döner", async ({ playwright }) => {
-    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000" });
+    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000", storageState: EMPTY_STATE });
     const res = await ctx.post("/api/vet/heartbeat");
     await ctx.dispose();
     expect(res.status()).toBe(401);

@@ -30,7 +30,7 @@ test.describe("İade akışı — güvenlik ve UI", () => {
   // ── C. API güvenliği (auth gerektirmez, curl-level) ──────────────────────
   test("video-refund endpoint — yetkisiz istek 401 döner", async ({ playwright }) => {
     // Fresh context with NO storageState → truly unauthenticated
-    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000" });
+    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000", storageState: { cookies: [], origins: [] } });
     const res = await ctx.post("/api/payments/video-refund", {
       data: { appointmentId: "00000000-0000-0000-0000-000000000000", refundType: "owner_early" },
     });

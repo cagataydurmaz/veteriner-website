@@ -176,7 +176,7 @@ test.describe("Vet — Randevu Yönetimi", () => {
 
   // ── D. API güvenliği — confirm ────────────────────────────────────────────
   test("confirm-appointment — yetkisiz istek 401 döner", async ({ playwright }) => {
-    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000" });
+    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000", storageState: { cookies: [], origins: [] } });
     const res = await ctx.post("/api/vet/confirm-appointment", {
       data: { appointmentId: "00000000-0000-0000-0000-000000000000" },
     });
@@ -187,7 +187,7 @@ test.describe("Vet — Randevu Yönetimi", () => {
 
   // ── E. API güvenliği — cancel ─────────────────────────────────────────────
   test("cancel-appointment — yetkisiz istek 401 döner", async ({ playwright }) => {
-    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000" });
+    const ctx = await playwright.request.newContext({ baseURL: "http://localhost:3000", storageState: { cookies: [], origins: [] } });
     const res = await ctx.post("/api/vet/cancel-appointment", {
       data: { appointmentId: "00000000-0000-0000-0000-000000000000" },
     });
