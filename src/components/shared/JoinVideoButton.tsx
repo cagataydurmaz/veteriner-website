@@ -62,6 +62,7 @@ export default function JoinVideoButton({
   return (
     <div className="flex flex-col items-center gap-1">
       <Button
+        data-testid="join-video-btn"
         onClick={handleJoin}
         disabled={loading}
         size={size}

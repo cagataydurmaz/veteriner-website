@@ -1223,6 +1223,7 @@ export default function BookAppointmentPage() {
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">Kart Üzerindeki İsim</label>
                   <input
+                    data-testid="card-holder-name"
                     type="text"
                     placeholder="AD SOYAD"
                     value={cardForm.cardHolderName}
@@ -1233,6 +1234,7 @@ export default function BookAppointmentPage() {
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">Kart Numarası</label>
                   <input
+                    data-testid="card-number"
                     type="text"
                     placeholder="0000 0000 0000 0000"
                     maxLength={19}
@@ -1245,6 +1247,7 @@ export default function BookAppointmentPage() {
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">Ay</label>
                     <select
+                      data-testid="card-expire-month"
                       value={cardForm.expireMonth}
                       onChange={e => setCardForm(f => ({ ...f, expireMonth: e.target.value }))}
                       className="w-full border border-gray-300 rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#166534]"
@@ -1259,6 +1262,7 @@ export default function BookAppointmentPage() {
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">Yıl</label>
                     <select
+                      data-testid="card-expire-year"
                       value={cardForm.expireYear}
                       onChange={e => setCardForm(f => ({ ...f, expireYear: e.target.value }))}
                       className="w-full border border-gray-300 rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#166534]"
@@ -1273,6 +1277,7 @@ export default function BookAppointmentPage() {
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">CVV</label>
                     <input
+                      data-testid="card-cvc"
                       type="text"
                       placeholder="000"
                       maxLength={4}
