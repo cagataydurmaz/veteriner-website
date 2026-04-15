@@ -300,6 +300,7 @@ export default function VetListClient({
         {geo.status !== "unsupported" && (
           <button
             onClick={handleDetectLocation}
+            data-testid="gps-btn"
             disabled={geo.status === "loading"}
             className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-semibold text-sm transition-all disabled:opacity-60 disabled:cursor-wait ${
               geo.status === "done"

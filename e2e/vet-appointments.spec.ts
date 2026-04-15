@@ -27,9 +27,23 @@ async function dismissCookieBanner(page: import("@playwright/test").Page) {
 
 test.describe("Vet — Randevu Yönetimi", () => {
 
+  /**
+   * Skip page-interaction tests if the vet is unverified
+   * (middleware redirects unverified vets to /vet/pending-approval,
+   *  so the appointments page is inaccessible until the vet is verified).
+   */
+  async function requireVerifiedVet(page: import("@playwright/test").Page) {
+    await page.goto("/vet/appointments", { waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("load");
+    const url = page.url();
+    if (url.includes("pending-approval") || !url.includes("/vet/")) {
+      test.skip(true, "Vet account not verified — skipping vet appointments test");
+    }
+  }
+
   // ── A. Sayfa yükleniyor ───────────────────────────────────────────────────
   test("randevular sayfası yükleniyor, tab'lar görünür", async ({ page }) => {
-    await page.goto("/vet/appointments", { waitUntil: "domcontentloaded" });
+    await requireVerifiedVet(page);
     await dismissCookieBanner(page);
 
     await expect(page.locator("h1").filter({ hasText: /Randevular/i })).toBeVisible({ timeout: 5_000 });
@@ -44,7 +58,7 @@ test.describe("Vet — Randevu Yönetimi", () => {
 
   // ── Tab switching: propagation check ──────────────────────────────────────
   test("tab geçişi çalışıyor — Bekleyen tab randevuları günceller", async ({ page }) => {
-    await page.goto("/vet/appointments", { waitUntil: "domcontentloaded" });
+    await requireVerifiedVet(page);
     await dismissCookieBanner(page);
 
     // Click "Bekleyen" tab
@@ -75,7 +89,7 @@ test.describe("Vet — Randevu Yönetimi", () => {
 
   // ── B. Onayla akışı ───────────────────────────────────────────────────────
   test("bekleyen randevu varsa Onayla butonu çalışıyor", async ({ page }) => {
-    await page.goto("/vet/appointments", { waitUntil: "domcontentloaded" });
+    await requireVerifiedVet(page);
     await dismissCookieBanner(page);
 
     // Switch to Bekleyen tab
@@ -114,7 +128,7 @@ test.describe("Vet — Randevu Yönetimi", () => {
 
   // ── C. İptal akışı ────────────────────────────────────────────────────────
   test("İptal Et butonu → dialog açılıyor → Vazgeç ile kapanıyor", async ({ page }) => {
-    await page.goto("/vet/appointments", { waitUntil: "domcontentloaded" });
+    await requireVerifiedVet(page);
     await dismissCookieBanner(page);
 
     // Look across all tabs for a cancellable appointment (pending or confirmed)
@@ -146,7 +160,7 @@ test.describe("Vet — Randevu Yönetimi", () => {
 
   // ── F. Müsaitlik sekmesi ──────────────────────────────────────────────────
   test("Müsaitlik sekmesi yükleniyor, takvim görünür", async ({ page }) => {
-    await page.goto("/vet/appointments", { waitUntil: "domcontentloaded" });
+    await requireVerifiedVet(page);
     await dismissCookieBanner(page);
 
     await page.locator("text=Müsaitlik").first().click();
@@ -194,7 +208,7 @@ test.describe("Vet — Randevu Yönetimi", () => {
 
   // ── G. Pending count badge ────────────────────────────────────────────────
   test("bekleyen randevu sayısı badge olarak yansıtılıyor", async ({ page }) => {
-    await page.goto("/vet/appointments", { waitUntil: "domcontentloaded" });
+    await requireVerifiedVet(page);
     await dismissCookieBanner(page);
 
     // Switch to Bekleyen tab

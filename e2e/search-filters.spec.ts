@@ -40,6 +40,7 @@ async function getResultCount(page: import("@playwright/test").Page): Promise<nu
 test.describe("/veteriner-bul", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/veteriner-bul", { waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("load");
     await dismissCookieBanner(page);
   });
 
@@ -92,6 +93,7 @@ test.describe("/veteriner-bul", () => {
 test.describe("/online-veteriner", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/online-veteriner", { waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("load");
     await dismissCookieBanner(page);
   });
 
@@ -103,6 +105,7 @@ test.describe("/online-veteriner", () => {
 
   test("Filtrele butonu expanded filtreleri açar", async ({ page }) => {
     const filterBtn = page.locator('[data-testid="expand-filters-btn"]');
+    await filterBtn.scrollIntoViewIfNeeded();
     await filterBtn.click();
     // Fee range select should appear
     await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible({ timeout: 3_000 });
@@ -110,7 +113,9 @@ test.describe("/online-veteriner", () => {
 
   test("fiyat filtresi sonuç sayısını günceller", async ({ page }) => {
     // Open expanded filters
-    await page.locator('[data-testid="expand-filters-btn"]').click();
+    const expandBtn = page.locator('[data-testid="expand-filters-btn"]');
+    await expandBtn.scrollIntoViewIfNeeded();
+    await expandBtn.click();
     await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible({ timeout: 3_000 });
 
     const before = await getResultCount(page).catch(() => -1);
@@ -135,7 +140,9 @@ test.describe("/online-veteriner", () => {
   });
 
   test("fiyat filtresi ₺300 üzeri olan veti ₺300-altı filtresinden çıkarır", async ({ page }) => {
-    await page.locator('[data-testid="expand-filters-btn"]').click();
+    const expandBtn2 = page.locator('[data-testid="expand-filters-btn"]');
+    await expandBtn2.scrollIntoViewIfNeeded();
+    await expandBtn2.click();
     await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible({ timeout: 3_000 });
 
     // Apply 0-300 filter
@@ -169,6 +176,7 @@ test.describe("/online-veteriner", () => {
 test.describe("/veterinerler", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/veterinerler", { waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("load");
     await dismissCookieBanner(page);
   });
 
@@ -191,12 +199,16 @@ test.describe("/veterinerler", () => {
   });
 
   test("fiyat filtresi expanded filters'da görünür", async ({ page }) => {
-    await page.locator('[data-testid="expand-filters-btn"]').click();
+    const expandBtn = page.locator('[data-testid="expand-filters-btn"]');
+    await expandBtn.scrollIntoViewIfNeeded();
+    await expandBtn.click();
     await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible({ timeout: 3_000 });
   });
 
   test("fiyat filtresi sonuç sayısını günceller", async ({ page }) => {
-    await page.locator('[data-testid="expand-filters-btn"]').click();
+    const expandBtn = page.locator('[data-testid="expand-filters-btn"]');
+    await expandBtn.scrollIntoViewIfNeeded();
+    await expandBtn.click();
     await expect(page.locator('[data-testid="fee-range-select"]')).toBeVisible({ timeout: 3_000 });
 
     const before = await getResultCount(page).catch(() => -1);
@@ -223,12 +235,15 @@ test.describe("/veterinerler", () => {
 
   test("Temizle butonu tüm filtreleri sıfırlar", async ({ page }) => {
     // Apply a filter
-    await page.getByText("📱 Online").click();
+    const onlinePill = page.getByText("📱 Online");
+    await onlinePill.scrollIntoViewIfNeeded();
+    await onlinePill.click();
     await page.waitForTimeout(300);
 
     // Temizle should appear
     const clearBtn = page.getByRole("button", { name: /Temizle/i });
-    await expect(clearBtn).toBeVisible();
+    await expect(clearBtn).toBeVisible({ timeout: 3_000 });
+    await clearBtn.scrollIntoViewIfNeeded();
     await clearBtn.click();
     await page.waitForTimeout(300);
 

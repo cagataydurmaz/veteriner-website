@@ -29,9 +29,18 @@ const TEST_PET_NAME = `E2E-Test-Kedi-${Date.now()}`;
 
 test.describe("Owner — Hayvan Yönetimi", () => {
 
+  /** Skip each test if owner auth is not available */
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/owner/pets", { waitUntil: "domcontentloaded" });
+    if (!page.url().includes("/owner/")) {
+      test.skip(true, "Owner auth not available — skipping owner test");
+    }
+  });
+
   // ── A. Pets listesi ──────────────────────────────────────────────────────────
   test("pets listesi yükleniyor, başlık ve butonlar görünür", async ({ page }) => {
     await page.goto("/owner/pets", { waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("load");
     await dismissCookieBanner(page);
 
     await expect(page.locator("h1, h2").first()).toBeVisible({ timeout: 5_000 });
@@ -46,21 +55,31 @@ test.describe("Owner — Hayvan Yönetimi", () => {
   // ── D. Validasyon ─────────────────────────────────────────────────────────
   test("boş form gönderilince validasyon hatası gösterilir", async ({ page }) => {
     await page.goto("/owner/pets/add", { waitUntil: "domcontentloaded" });
+    // Wait for full JS hydration before interacting
+    await page.waitForLoadState("load");
     await dismissCookieBanner(page);
 
-    // Submit without filling anything
-    await page.locator('[data-testid="pet-submit"]').click();
+    // Ensure submit button is rendered and ready
+    const submitBtn = page.locator('[data-testid="pet-submit"]');
+    await submitBtn.waitFor({ state: "visible", timeout: 5_000 });
 
-    // Validation errors should appear — Zod messages in red <p> tags
-    // "İsim gereklidir" or "Tür seçiniz"
-    const errMsg = page.locator("p.text-red-500, p[class*='red']").first();
+    // Submit without filling anything
+    await submitBtn.click();
+
+    // Validation errors should appear — react-hook-form Zod messages
+    // Matches: "İsim gereklidir" or "Tür seçiniz"
+    const errMsg = page.locator("text=/İsim gereklidir|Tür seçiniz/i").first();
     await expect(errMsg).toBeVisible({ timeout: 3_000 });
   });
 
   // ── B. Hayvan ekle ──────────────────────────────────────────────────────────
   test("yeni hayvan ekleniyor → pets listesinde görünüyor", async ({ page }) => {
     await page.goto("/owner/pets/add", { waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("load");
     await dismissCookieBanner(page);
+
+    // Ensure form inputs are ready
+    await page.locator('[data-testid="pet-name"]').waitFor({ state: "visible", timeout: 5_000 });
 
     // Fill form
     await page.locator('[data-testid="pet-name"]').fill(TEST_PET_NAME);
@@ -69,7 +88,7 @@ test.describe("Owner — Hayvan Yönetimi", () => {
     // Submit
     await page.locator('[data-testid="pet-submit"]').click();
 
-    // Should redirect to pets list or show success
+    // Wait for redirect (router.push) or success toast
     await Promise.race([
       page.waitForURL(/\/owner\/pets$/, { timeout: 10_000 }),
       page.waitForURL(/\/owner\/pets\/[0-9a-f-]{36}/, { timeout: 10_000 }),
@@ -77,12 +96,14 @@ test.describe("Owner — Hayvan Yönetimi", () => {
 
     await page.waitForTimeout(500);
 
-    // If redirected to list — verify pet appears
-    if (page.url().includes("/owner/pets")) {
-      await expect(page.locator(`text=${TEST_PET_NAME}`)).toBeVisible({ timeout: 5_000 });
-    }
+    // Hard reload the list page to bypass Next.js router cache
+    await page.goto("/owner/pets", { waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("load");
+    await page.waitForTimeout(500);
 
-    // If still on add page (error) — check for success toast or no JS error
+    // Verify the newly added pet appears in the list
+    await expect(page.locator(`text=${TEST_PET_NAME}`)).toBeVisible({ timeout: 8_000 });
+
     await expect(page.locator("body")).not.toContainText("Uncaught");
   });
 

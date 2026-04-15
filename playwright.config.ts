@@ -89,6 +89,7 @@ export default defineConfig({
     },
 
     // ── 6. Mobile viewport — public search pages (Chromium, iPhone 13 dims) ──
+    // No auth needed — public pages only; no storageState dependency
     {
       name: 'mobile-tests',
       use: {
@@ -98,7 +99,6 @@ export default defineConfig({
         hasTouch: true,
         userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
       },
-      dependencies: ['setup'],
       testMatch: /search-filters.*\.spec\.ts$/,
     },
   ],
