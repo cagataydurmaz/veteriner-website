@@ -67,7 +67,14 @@ export async function GET(req: NextRequest) {
       if (future.length > 0) filtered[dateStr] = future;
     }
 
-    return NextResponse.json({ slots: filtered });
+    // Cache availability for 60s at CDN/browser level.
+    // Slots rarely change mid-minute; when a booking is made the UI refetches anyway.
+    // stale-while-revalidate=30 lets CDN serve stale data while fetching fresh copy.
+    return NextResponse.json({ slots: filtered }, {
+      headers: {
+        "Cache-Control": "public, max-age=60, stale-while-revalidate=30",
+      },
+    });
   } catch (err) {
     console.error("availability route error:", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });

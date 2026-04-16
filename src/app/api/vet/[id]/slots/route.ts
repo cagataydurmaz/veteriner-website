@@ -59,7 +59,11 @@ export async function GET(
       return slotMs - nowMs >= bufferMs;
     });
 
-    return NextResponse.json({ date: dateParam, slots });
+    return NextResponse.json({ date: dateParam, slots }, {
+      headers: {
+        "Cache-Control": "public, max-age=60, stale-while-revalidate=30",
+      },
+    });
   } catch (err) {
     console.error("[vet/[id]/slots]", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });

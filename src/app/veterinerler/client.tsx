@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import type { VetStatusChangeDetail } from "@/components/owner/VetListRealtimeSync";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Search, MapPin, Star, ShieldCheck, X, Video,
   ChevronRight, Clock, SlidersHorizontal, CheckCircle2, Loader2,
@@ -569,8 +570,15 @@ function VetCard({ vet, distanceKm }: { vet: Vet; distanceKm?: number }) {
         <div className="flex items-start gap-3">
           <div className="w-14 h-14 bg-[#DCFCE7] rounded-2xl flex items-center justify-center text-xl font-black text-[#166534] shrink-0 overflow-hidden border-2 border-[#DCFCE7] group-hover:border-[#166534]/30 transition-colors">
             {user?.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
+              <Image
+                src={user.avatar_url}
+                alt={user.full_name}
+                width={56}
+                height={56}
+                className="w-full h-full object-cover"
+                sizes="56px"
+                loading="lazy"
+              />
             ) : initials}
           </div>
           <div className="flex-1 min-w-0">

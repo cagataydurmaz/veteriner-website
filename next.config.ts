@@ -14,21 +14,40 @@ const nextConfig: NextConfig = {
       'lucide-react',
       '@radix-ui/react-icons',
       '@radix-ui/react-accordion',
+      '@radix-ui/react-alert-dialog',
+      '@radix-ui/react-avatar',
+      '@radix-ui/react-checkbox',
       '@radix-ui/react-dialog',
       '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-label',
+      '@radix-ui/react-popover',
+      '@radix-ui/react-progress',
+      '@radix-ui/react-scroll-area',
       '@radix-ui/react-select',
+      '@radix-ui/react-separator',
+      '@radix-ui/react-slider',
+      '@radix-ui/react-switch',
       '@radix-ui/react-tabs',
+      '@radix-ui/react-toast',
+      '@radix-ui/react-tooltip',
       'recharts',
+      'date-fns',
+      'sonner',
     ],
 
     // Client-side router cache TTL tuning
-    // dynamic: 0  → don't cache dynamic pages (each navigation re-fetches from server)
+    // dynamic: 30 → cache dynamic pages 30s in router (eliminates server roundtrip on back-nav)
     // static: 300 → cache static pages for 5 min (public marketing pages)
-    // This prevents stale dashboard data while keeping public page transitions instant.
+    // 0 was too aggressive — every link click hit the server even for recently visited pages.
     staleTimes: {
-      dynamic: 0,
+      dynamic: 30,
       static: 300,
     },
+  },
+
+  // Reuse TCP connections to Supabase — reduces handshake latency per server request
+  httpAgentOptions: {
+    keepAlive: true,
   },
 
   async rewrites() {

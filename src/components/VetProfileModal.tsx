@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   X, Star, MapPin, ShieldCheck, Video, Clock,
   GraduationCap, Calendar,
@@ -127,11 +128,14 @@ export default function VetProfileModal({ vet, onClose }: Props) {
             {/* Avatar */}
             <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center text-3xl font-black text-white shrink-0 overflow-hidden">
               {user?.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={user.avatar_url}
                   alt={user.full_name}
+                  width={80}
+                  height={80}
                   className="w-full h-full object-cover"
+                  sizes="80px"
+                  priority
                 />
               ) : (
                 initials

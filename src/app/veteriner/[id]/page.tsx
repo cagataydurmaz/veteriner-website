@@ -6,6 +6,7 @@ import { ArrowLeft, MapPin, Star, ShieldCheck, Calendar, GraduationCap, MessageC
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import ReportVetButton from "@/components/owner/ReportVetButton";
 
 // Cache vet profile pages for 1 hour
@@ -219,10 +220,14 @@ export default async function VetProfilePage({ params }: PageProps) {
             <div className="bg-white rounded-2xl border border-gray-200 p-6 text-center shadow-sm">
               {/* Avatar */}
               {user?.avatar_url ? (
-                <img
+                <Image
                   src={user.avatar_url}
                   alt={user.full_name}
+                  width={80}
+                  height={80}
                   className="w-20 h-20 rounded-full object-cover mx-auto mb-3 border-2 border-[#DCFCE7]"
+                  sizes="80px"
+                  priority
                 />
               ) : (
                 <div className="w-20 h-20 bg-gradient-to-br from-[#166534] to-[#15803D] rounded-full flex items-center justify-center mx-auto mb-3">

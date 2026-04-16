@@ -27,7 +27,7 @@ const VET_AUTH_FILE   = path.join(__dirname, "../playwright/.auth/vet.json");
 
 // Playwright 1.33+'da playwright.request.newContext() projenin storageState'ini miras alır.
 // Gerçekten anonim (cookie'siz) istek göndermek için açıkça boş state geçilmeli.
-const EMPTY_STATE = { cookies: [], origins: [] } as const;
+const EMPTY_STATE = { cookies: [] as never[], origins: [] as never[] };
 
 // ── Unauthenticated ──────────────────────────────────────────────────────────
 test.describe("Toggle API — unauthenticated", () => {

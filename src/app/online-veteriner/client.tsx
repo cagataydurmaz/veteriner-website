@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Search, MapPin, Star, ShieldCheck, X, Video,
   ChevronRight, Clock, SlidersHorizontal, CheckCircle2, Zap, Loader2,
@@ -447,8 +448,15 @@ function OnlineVetCard({ vet, isBusy, distanceKm }: { vet: Vet; isBusy: boolean;
           <div className="relative">
             <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-xl font-black text-blue-600 shrink-0 overflow-hidden border-2 border-blue-100 group-hover:border-blue-300 transition-colors">
               {user?.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
+                <Image
+                  src={user.avatar_url}
+                  alt={user.full_name}
+                  width={56}
+                  height={56}
+                  className="w-full h-full object-cover"
+                  sizes="56px"
+                  loading="lazy"
+                />
               ) : initials}
             </div>
             {/* Video badge */}

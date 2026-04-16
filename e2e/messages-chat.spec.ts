@@ -22,7 +22,7 @@ const VET_AUTH_FILE   = path.join(__dirname, "../playwright/.auth/vet.json");
 
 const FAKE_APT_ID = "00000000-0000-0000-0000-000000000099";
 // Playwright 1.33+'da playwright.request.newContext() projenin storageState'ini miras alır.
-const EMPTY_STATE = { cookies: [], origins: [] } as const;
+const EMPTY_STATE = { cookies: [] as never[], origins: [] as never[] };
 
 // ── A. Yetkisiz (unauthenticated) ─────────────────────────────────────────────
 test.describe("Messages API — auth & input validation", () => {

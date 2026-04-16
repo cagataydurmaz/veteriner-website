@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { createServiceClient } from "@/lib/supabase/server";
 import { MapPin, Search, Star, ShieldCheck, Stethoscope, ChevronRight, Users, PawPrint,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,33 +14,39 @@ export const metadata: Metadata = {
   description: "Türkiye'nin tüm illerinde diploma doğrulamalı veterinerleri şehre ve uzmanlığa göre bulun.",
 };
 
-async function getVetsData() {
-  try {
-    const supabase = await createClient();
-    const { data: vets } = await supabase
-      .from("veterinarians")
-      .select(`
-        id, specialty, city, district, average_rating, total_reviews, bio,
-        offers_in_person, offers_video, offers_nobetci,
-        is_verified, education, video_consultation_fee, consultation_fee,
-        working_hours_start, working_hours_end, working_days, is_available_today,
-        user:users!veterinarians_user_id_fkey(full_name, avatar_url)
-      `)
-      .eq("is_verified", true)
-      .order("average_rating", { ascending: false })
-      .limit(200);
+// Cache vet list for 5 minutes — no per-request variation, public data only.
+// Uses service client (no cookie needed) so Next.js can deduplicate across requests.
+const getVetsData = unstable_cache(
+  async () => {
+    try {
+      const supabase = createServiceClient();
+      const { data: vets } = await supabase
+        .from("veterinarians")
+        .select(`
+          id, specialty, city, district, average_rating, total_reviews, bio,
+          offers_in_person, offers_video, offers_nobetci,
+          is_verified, education, video_consultation_fee, consultation_fee,
+          working_hours_start, working_hours_end, working_days, is_available_today,
+          user:users!veterinarians_user_id_fkey(full_name, avatar_url)
+        `)
+        .eq("is_verified", true)
+        .order("average_rating", { ascending: false })
+        .limit(200);
 
-    // City counts
-    const cityMap: Record<string, number> = {};
-    (vets || []).forEach((v: { city: string }) => {
-      if (v.city) cityMap[v.city] = (cityMap[v.city] || 0) + 1;
-    });
+      // City counts
+      const cityMap: Record<string, number> = {};
+      (vets || []).forEach((v: { city: string }) => {
+        if (v.city) cityMap[v.city] = (cityMap[v.city] || 0) + 1;
+      });
 
-    return { vets: vets || [], cityMap };
-  } catch {
-    return { vets: [], cityMap: {} };
-  }
-}
+      return { vets: vets || [], cityMap };
+    } catch {
+      return { vets: [], cityMap: {} };
+    }
+  },
+  ["veterinerler-vet-list"],
+  { revalidate: 300 }  // 5 dakika cache — vet sayısı sık değişmez
+);
 
 export default async function VeterinerlerPage({
   searchParams,
