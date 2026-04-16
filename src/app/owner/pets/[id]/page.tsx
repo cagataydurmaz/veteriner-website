@@ -22,6 +22,7 @@ import {
   Printer,
 } from "lucide-react";
 import WeightChart from "@/components/owner/WeightChart";
+import PetDeleteButton from "@/components/owner/PetDeleteButton";
 import type { Vaccine, MedicalRecord, WeightLog, PetPhoto } from "@/types";
 
 interface Params {
@@ -95,12 +96,15 @@ export default async function PetDetailPage({ params }: Params) {
             <h1 className="text-2xl font-bold text-gray-900">{pet.name}</h1>
             <p className="text-gray-500">{pet.species}{pet.breed ? ` · ${pet.breed}` : ""}</p>
           </div>
-          <Link href={`/owner/pets/${id}/edit`}>
-            <Button variant="outline" size="sm">
-              <Edit className="w-4 h-4 mr-2" />
-              Düzenle
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href={`/owner/pets/${id}/edit`}>
+              <Button variant="outline" size="sm">
+                <Edit className="w-4 h-4 mr-2" />
+                Düzenle
+              </Button>
+            </Link>
+            <PetDeleteButton petId={id} petName={pet.name} />
+          </div>
         </div>
       </div>
 
